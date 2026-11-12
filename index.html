@@ -42,23 +42,6 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-header {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 3;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 0;
-}
-.actions { display: flex; align-items: center; gap: 16px; }
-.link {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.link:hover { text-decoration: underline; text-underline-offset: 3px; }
-.link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-.link-channel { color: var(--accent); }
-
 .hero {
   --c: var(--gray);
   position: relative;
@@ -142,13 +125,6 @@ header {
 </style>
 </head>
 <body>
-<header>
-  <div class="actions">
-    <a class="link" href="https://forms.gle/M2RTTSPE8Lpu8Dcc8" target="_blank" rel="noopener noreferrer">Feedback</a>
-    <a class="link link-channel" href="https://t.me/RomashkaSystems">Channel</a>
-  </div>
-</header>
-
 <main>
   <div class="hero" id="hero" data-state="loading">
     <div class="bulb" id="bulb" role="img" aria-label="Light bulb">💡</div>
@@ -196,7 +172,7 @@ function supervisorStopped() {
 var UI = {
   loading: ["Checking…", "Checking if there is power at home."],
   on:      ["Power is on", "The server is running, so there is power at home."],
-  off:     ["Power is out", 'We’ve lost contact with the server, and this was not a planned shutdown. Most likely the power is out and the computer turned off unexpectedly. Updates are in the <a href="' + CH + '">Telegram channel</a>.'],
+  off:     ["Power is out", 'Most likely there is no power at home. You can see the exact time it went out in the <a href="' + CH + '">Telegram channel</a>.'],
   planned: ["Can’t tell right now", 'The server was turned off on purpose, so its status says nothing about the power. Details are in the <a href="' + CH + '">Telegram channel</a>.'],
   unknown: ["Status unknown", 'We couldn’t check the status right now. Check the <a href="' + CH + '">Telegram channel</a> for updates.']
 };
