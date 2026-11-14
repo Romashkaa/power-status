@@ -1,30 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Power status</title>
+<title>Стан світла</title>
 <style>
 :root {
-  --bg: #f5f5f7;
-  --fg: #1d1d1f;
-  --muted: #6e6e73;
+  --bg: #000000;
+  --fg: #f5f5f7;
+  --muted: #98989f;
   --accent: #0a84ff;
-  --yellow: #ffcc00;
-  --orange: #ff9500;
-  --gray: #8e8e93;
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #000000;
-    --fg: #f5f5f7;
-    --muted: #98989f;
-    --yellow: #ffd60a;
-    --orange: #ff9f0a;
-    --gray: #98989d;
-  }
+  --yellow: #ffd60a;
+  --orange: #ff9f0a;
+  --gray: #98989d;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -127,12 +118,12 @@ a:hover { text-decoration: underline; }
 <body>
 <main>
   <div class="hero" id="hero" data-state="loading">
-    <div class="bulb" id="bulb" role="img" aria-label="Light bulb">💡</div>
-    <h1 class="big" id="title">Checking…</h1>
-    <p class="lead" id="msg" aria-live="polite">Checking if there is power at home.</p>
+    <div class="bulb" id="bulb" role="img" aria-label="Лампочка">💡</div>
+    <h1 class="big" id="title">Перевіряємо…</h1>
+    <p class="lead" id="msg" aria-live="polite">Перевіряємо, чи є світло вдома.</p>
     <div class="meta">
       <span id="time"></span>
-      <a href="https://quietpulse.xyz/status/2ef55dc4-ca03-463c-84ec-c39269c26345">Details</a>
+      <a href="https://quietpulse.xyz/status/2ef55dc4-ca03-463c-84ec-c39269c26345">Деталі</a>
     </div>
   </div>
 </main>
@@ -170,11 +161,11 @@ function supervisorStopped() {
 }
 
 var UI = {
-  loading: ["Checking…", "Checking if there is power at home."],
-  on:      ["Power is on", "The server is running, so there is power at home."],
-  off:     ["Power is out", 'Most likely there is no power at home. You can see the exact time it went out in the <a href="' + CH + '">Telegram channel</a>.'],
-  planned: ["Can’t tell right now", 'The server was turned off on purpose, so its status says nothing about the power. Details are in the <a href="' + CH + '">Telegram channel</a>.'],
-  unknown: ["Status unknown", 'We couldn’t check the status right now. Check the <a href="' + CH + '">Telegram channel</a> for updates.']
+  loading: ["Перевіряємо…", "Перевіряємо, чи є світло."],
+  on:      ["Світло є", "Сервер працює, отже світло є."],
+  off:     ["Світла немає", 'Імовірно, вдома немає світла. Точний час, коли воно зникло, можна побачити в <a href="' + CH + '">Telegram-каналі</a>.'],
+  planned: ["Наразі не можна сказати", 'Сервер вимкнули на обслуговування. Подробиці — в <a href="' + CH + '">Telegram-каналі</a>.'],
+  unknown: ["Стан невідомий", 'Не вдалося перевірити стан. Новини дивіться в <a href="' + CH + '">Telegram-каналі</a>.']
 };
 
 function state() {
@@ -189,7 +180,7 @@ function render() {
   $("hero").dataset.state = st;
   $("title").textContent = ui[0];
   $("msg").innerHTML = ui[1];
-  $("time").textContent = checkedAt ? "Checked " + checkedAt : "";
+  $("time").textContent = checkedAt ? "Перевірено о " + checkedAt : "";
 }
 
 function loadServer() {
@@ -201,7 +192,7 @@ function loadServer() {
     .catch(function () { server = "unknown"; })
     .finally(function () {
       clearTimeout(timer);
-      checkedAt = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      checkedAt = new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
       render();
     });
 }
