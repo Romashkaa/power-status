@@ -98,6 +98,13 @@ a:hover { text-decoration: underline; }
   line-height: 1.5;
 }
 
+.lastping {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .meta {
   display: flex;
   align-items: center;
@@ -108,6 +115,7 @@ a:hover { text-decoration: underline; }
   font-variant-numeric: tabular-nums;
 }
 .meta a { font-weight: 600; }
+.lead[hidden] + .lastping[hidden] + .meta { margin-top: 18px; }
 
 @media (prefers-reduced-motion: reduce) {
   .bulb { animation: none !important; transition: none; }
@@ -121,6 +129,7 @@ a:hover { text-decoration: underline; }
     <div class="bulb" id="bulb" role="img" aria-label="Лампочка">💡</div>
     <h1 class="big" id="title">Перевіряємо…</h1>
     <p class="lead" id="msg" aria-live="polite">Перевіряємо, чи є світло вдома.</p>
+    <p class="lastping" id="ping" hidden></p>
     <div class="meta">
       <span id="time"></span>
       <a href="https://quietpulse.xyz/status/2ef55dc4-ca03-463c-84ec-c39269c26345">Деталі</a>
@@ -132,6 +141,8 @@ a:hover { text-decoration: underline; }
 var CH = "https://t.me/RomashkaSystems";
 var API_URL  = "https://api.github.com/repos/Romashkaa/status-data/contents/services.json?ref=main";
 var DATA_URL = "https://raw.githubusercontent.com/Romashkaa/status-data/main/services.json";
+var JOB_ID = "2ef55dc4-ca03-463c-84ec-c39269c26345";
+var PUBLIC_URL = "https://quietpulse.xyz/api/jobs/" + JOB_ID + "/public";
 var SERVER_JOB = "https://quietpulse.xyz/api/jobs/2ef55dc4-ca03-463c-84ec-c39269c26345/badge.svg";
 
 var STATES = [
@@ -151,7 +162,8 @@ function parse(svg) {
   return "unknown";
 }
 
-var server = "loading", checkedAt = "";
+var server = "loading", checkedAt = "", lastPing = "";
+var STATUS_MAP = { healthy: "online", late: "late", pending: "pending", waiting: "pending", "new": "pending" };
 var svcData = null, svcFailed = false;
 
 function $(id) { return document.getElementById(id); }
@@ -161,10 +173,10 @@ function supervisorStopped() {
 }
 
 var UI = {
-  loading: ["Перевіряємо…", "Перевіряємо, чи є світло."],
-  on:      ["Світло є", "Сервер працює, отже світло є."],
-  off:     ["Світла немає", 'Імовірно, вдома немає світла. Точний час, коли воно зникло, можна побачити в <a href="' + CH + '">Telegram-каналі</a>.'],
-  planned: ["Наразі не можна сказати", 'Сервер вимкнули на обслуговування. Подробиці — в <a href="' + CH + '">Telegram-каналі</a>.'],
+  loading: ["Перевіряємо…", "Перевіряємо, чи є світло вдома"],
+  on:      ["Світло є"],
+  off:     ["Світла немає", 'Імовірно, вдома немає світла'],
+  planned: ["Наразі не можна сказати", 'Сервер вимкнули на технічні роботи. Подробиці — в <a href="' + CH + '">Telegram-каналі</a>.'],
   unknown: ["Стан невідомий", 'Не вдалося перевірити стан. Новини дивіться в <a href="' + CH + '">Telegram-каналі</a>.']
 };
 
@@ -177,21 +189,60 @@ function state() {
 
 function render() {
   var st = state(), ui = UI[st];
+  var desc = ui[1] || "";
+  var p = $("ping"), pp = lastPing ? pingParts(lastPing) : null, line = "";
+
+  if (pp && st === "off") {
+    desc = "Світло вимкнули " + (pp.day ? pp.day + " " : "") + "о " + pp.time;
+  }
+
   $("hero").dataset.state = st;
   $("title").textContent = ui[0];
-  $("msg").innerHTML = ui[1];
+  $("msg").innerHTML = desc;
+  $("msg").hidden = !desc;
   $("time").textContent = checkedAt ? "Перевірено о " + checkedAt : "";
+
+  if (pp && st === "planned") {
+    line = "Технічні роботи з " + (pp.day ? pp.day + ", " : "") + pp.time;
+  }
+  p.textContent = line;
+  p.hidden = !line;
+}
+
+function pingParts(iso) {
+  try {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    var key = function (x) { return x.toLocaleDateString("en-CA", { timeZone: "Europe/Kyiv" }); };
+    return {
+      time: d.toLocaleTimeString("uk-UA", { timeZone: "Europe/Kyiv", hour: "2-digit", minute: "2-digit" }),
+      day: key(d) === key(new Date()) ? "" : d.toLocaleDateString("uk-UA", { timeZone: "Europe/Kyiv", day: "numeric", month: "long" })
+    };
+  } catch (e) { return null; }
+}
+
+function withTimeout(url, ms) {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, ms);
+  return fetch(url + "?t=" + Date.now(), { cache: "no-store", signal: ctrl.signal })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r; })
+    .finally(function () { clearTimeout(timer); });
 }
 
 function loadServer() {
-  var ctrl = new AbortController();
-  var timer = setTimeout(function () { ctrl.abort(); }, 10000);
-  fetch(SERVER_JOB + "?t=" + Date.now(), { cache: "no-store", signal: ctrl.signal })
-    .then(function (r) { return r.text(); })
-    .then(function (svg) { server = parse(svg); })
-    .catch(function () { server = "unknown"; })
+  withTimeout(PUBLIC_URL, 10000)
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      server = j.is_enabled === false ? "offline" : (STATUS_MAP[j.status] || "offline");
+      lastPing = j.last_ping_at || "";
+    })
+    .catch(function () {
+      return withTimeout(SERVER_JOB, 10000)
+        .then(function (r) { return r.text(); })
+        .then(function (svg) { server = parse(svg); })
+        .catch(function () { server = "unknown"; });
+    })
     .finally(function () {
-      clearTimeout(timer);
       checkedAt = new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
       render();
     });
